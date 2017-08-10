@@ -1,0 +1,913 @@
+---
+title: "Can you Polish your Dutch?"
+author: "Jacek Pardyak"
+date: '`r Sys.Date()`'
+output:
+  tufte::tufte_handout:
+    fig_caption: yes
+    citation_package: natbib
+    latex_engine: xelatex
+  tufte::tufte_book:
+    citation_package: natbib
+    latex_engine: xelatex
+  tufte::tufte_html: default
+link-citations: yes
+subtitle: Szkic dla Lokomotywy
+bibliography: skeleton.bib
+---
+
+```{r setup, include=FALSE}
+library(tufte)
+# invalidate cache when the tufte version changes
+knitr::opts_chunk$set(tidy = FALSE, cache.extra = packageVersion('tufte'))
+options(htmltools.dir.version = FALSE)
+```
+
+# Wprowadzenie
+
+```{r, echo=FALSE}
+PL = c("ananas", "banan", "jabłko")
+NL = c("ananas", "banaan", "aardbei")
+```
+
+Popatrzmy na dwa słowniki (zbiory słów):
+
+```{r, echo=FALSE}
+knitr::kable(
+PL, caption = 'Słowa w słowniku polskim'
+)
+```
+ 
+ 
+```{r, echo=FALSE}
+knitr::kable(
+NL, caption = 'Słowa w słowniku niderlandzkim'
+)
+```
+  
+Interesuje nas podobieństwo słów w obu słownikach, które może być zaprezentowane:
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+require('VennDiagram')
+v <- venn.diagram(list(PL=PL, NL=NL),
+                  fill = c("red", "orange"),
+                  alpha = c(0.5, 0.5), cat.cex = 1.5, cex=1.5,
+                  filename=NULL)
+
+# Over-write labels (5 to 7 chosen by manual check of labels)
+# in PL only
+v[[5]]$label <- paste(setdiff(PL, NL), collapse="\n")  
+# in NL only
+v[[6]]$label <- paste(setdiff(NL, PL)  , collapse="\n")  
+# intesection
+v[[7]]$label <- paste(intersect(NL, PL), collapse="\n")  
+
+# plot  
+grid.newpage()
+grid.draw(v)
+```
+
+
+Będą nas interesować słowa identyczne i podobne (przy zdefiniowaniu, co to znaczy "podobne"). 
+
+# Dane 
+
+## Alfabety
+
+Słowa to ciągi elementów (liter) należacych do pewnego zbioru (alfabetu). Oba języki posługują się innymi alfabetami. 
+Możemy porównać oba alfabety:^[Żródło: https://en.wikipedia.org/wiki/Polish_orthography , oraz  https://en.wikipedia.org/wiki/Dutch_orthography] 
+
+```{r, echo=FALSE}
+alphabetPL <- c('a', 'ą', 'b', 'c', 'ć', 'd', 'e', 'ę', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'ł', 'm', 'n', 'ń', 'o', 'ó', 'p', 'r', 's', 'ś', 't', 'u', 'w', 'y', 'z', 'ź', 'ż')
+alphabetNL <- c('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z')
+
+alphabet <- union(alphabetPL, alphabetNL)
+alphabet <- alphabet[order(alphabet)]
+
+table <- as.data.frame(alphabet)
+names(table) <- c('Letter')
+table$NL <- alphabet %in% alphabetNL
+table$PL <- alphabet %in% alphabetPL
+```
+
+```{r, echo=FALSE}
+knitr::kable(
+table, caption = 'Alfabety'
+)
+```
+
+Dodatkowo oba języki stosują dwuznaki.
+
+## Słowa 
+
+Słowa powstają z liter alfabetu.
+
+## Słowniki 
+
+Słowniki to zbiory słów.^[słowniki czynne, branżowe, słownictwo ....]
+
+## Słowniki Aspell
+
+Wybrałem słowniki **Aspell**, bo są tam oba języki (porównujemy jabłka do jabłek). Nie mógł być np SJP. 
+**Aspell**^[http://aspell.net/]  to standardowy w systemach GNU program do sprawdzania pisowni. Słowniki pochodzą z tej strony . 
+
+```{r, echo=FALSE}
+wordsPL <- read.csv(file="./dics/pl.wl",
+               header = F,
+               encoding = 'UTF-8',
+               stringsAsFactors = F)
+
+
+wordsNL <- read.csv(file="./dics/nl.wl",
+               header = F,
+               encoding = 'UTF-8',
+               stringsAsFactors = F)
+
+names(wordsPL) <- c("Word")
+names(wordsNL) <- c("Word")
+```
+
+## Słowa słownika Aspell
+
+Jak wyglądają zgromadzone tam dane?
+
+```{r, echo=FALSE}
+knitr::kable(
+head(wordsPL), caption = 'Pierwsze słowa w słowniku polskim'
+)
+```
+```{r, echo=FALSE}
+knitr::kable(
+tail(wordsPL, addrownums = FALSE), caption = 'Ostatnie słowa w słowniku polskim'
+)
+```
+```{r, echo=FALSE}
+knitr::kable(
+head(wordsNL), caption = 'Pierwsze słowa w słowniku niderlandzkim'
+)
+```
+```{r, echo=FALSE}
+knitr::kable(
+tail(wordsNL, addrownums = FALSE), caption = 'Ostatnie słowa w słowniku niderlandzkim'
+)
+```
+
+Polski słownik zawiera: `r nrow(wordsPL)` słów, zaś niderlandzki
+`r nrow(wordsNL)` słów.
+
+## Słowniki a listy słów
+
+Niektóre języki, w tym polski stosują fleksję (z łac. przeistoczenie słów, przemiana) dla nadania słowom nowej funkcji gramatycznej. 
+
+```{r, echo=FALSE}
+pl_affix <- read.csv(file="./affix/pl_affix.dat",
+               header = F,
+               encoding = 'UTF-8',
+               stringsAsFactors = F)
+```
+
+```{r, echo=FALSE}
+fullwordsPL <- read.csv(file="./words/wordsPL.dict",
+               header = F,
+               encoding = 'UTF-8',
+               stringsAsFactors = F)
+
+fullwordsNL <- read.csv(file="./words/wordsNL.dict",
+               header = F,
+               encoding = 'UTF-8',
+               stringsAsFactors = F)
+```
+
+
+Na przykład:
+
+```{r, echo=FALSE}
+knitr::kable(
+unlist(strsplit(wordsPL[289837,],'/'))[1], caption = 'Forma podstawowa'
+)
+```
+
+```{r, echo=FALSE}
+knitr::kable(
+fullwordsPL[3761289:3761309,], caption = 'Możliwe odmiany'
+)
+```
+
+
+
+W Aspell zaimplementowano `r length(grep("SFX", pl_affix$V1))` reguł odmiany końcówek słów w zależności od ich znaczenia. W języku niderlandzkim tych reguł niemal nie ma.
+
+Po ich zastosowaniu lista polskich słów zawiera: `r nrow(fullwordsPL)` słów, zaś niderlandzkich tyle samo, bo `r nrow(fullwordsNL)` słów. Spowodowało to `r round(nrow(fullwordsPL)/nrow(wordsPL))` - krotny wzrost liczby słów polskich, gdy uwzględni się ich różne formy gramatyczne. 
+
+> Listy słów pozyskano z programu Aspell w Ubuntu wykonując komendy:
+
+> `aspell --lang=pl dump master | aspell --lang=pl expand | tr ' ' '\n' > wordsPL.dict`
+
+> oraz 
+
+> `aspell --lang=nl dump master | aspell --lang=nl expand | tr ' ' '\n' > wordsNL.dict`
+
+
+> Słowniki 
+> aspell --lang=en dump master > dictEN.dict
+
+
+
+## Przygotowanie danych
+
+Pracować będziemy na słownikach, a nie listach słów. Zatem informacje o przypisanym słowom regułach możemy usunąć i posługiwać się formą podstawową słowa.
+
+```{r, echo=FALSE}
+
+wordsPL$Word <- gsub("\\/.*","",wordsPL$Word)
+wordsNL$Word <- gsub("\\/.*","",wordsNL$Word)
+
+
+wordsPL$Lang <- c('PL')
+wordsNL$Lang <- c('NL')
+words <- rbind(wordsPL, wordsNL)
+```
+
+
+# Opis statystyczny słów słowników polskiego i niderlandzkiego
+
+## Rozkład długości słów
+
+Zaczynamy od zmierzenia długości słów.
+
+```{r, echo=FALSE}
+words$Length <- sapply(words$Word, nchar)
+```
+
+Minimalna, maksymalna i średnia długość polskich słów:
+
+```{r, echo=FALSE}
+knitr::kable(
+  as.data.frame(as.matrix(
+    summary(words[words$Lang == "PL","Length"]))),
+caption = 'Podsumowanie długości słów polskich'
+)
+```
+
+
+Minimalna, maksymalna i średnia długość niderlandzkich słów:
+
+```{r, echo=FALSE}
+knitr::kable(
+  as.data.frame(as.matrix(
+    summary(words[words$Lang == "NL","Length"]))),
+caption = 'Podsumowanie długości słów niderlandzkich'
+)
+```
+
+
+
+Wyniki możemy porównać graficznie:
+
+```{r, echo=FALSE, message=FALSE}
+require(ggplot2)
+ggplot(words, aes(x=Length, fill=Lang)) +
+    geom_histogram(binwidth=1, alpha=.5, position="identity")
+```
+
+```{r, echo=FALSE}
+docsPL <- words[words$Lang == 'PL',]
+maxPL <- docsPL[docsPL$Length == max(docsPL$Length),'Word']
+
+docsNL <- words[words$Lang == 'NL',]
+maxNL <- docsNL[docsNL$Length == max(docsNL$Length),'Word']
+
+```
+
+
+Najdłuższe polskie słowo:
+
+**`r maxPL`**^[Ninety-five-half-year-old]
+
+Najdłuższe niderlandzkie słowo: 
+
+**`r maxNL`**^[Disability Insurance Society]
+
+
+## Częstotliwość występowania liter w obu językach
+
+Porównujemy względną częstotliwość.
+
+```{r, echo=FALSE, message=FALSE}
+require(plyr)
+docs <- words[words$Lang == "PL",'Word']
+docs <- tolower(docs)
+docs <- gsub("", " ", docs)
+docs <- strsplit(docs, " ")
+docs <- unlist(docs)
+docs <- table(docs)
+docs <- data.frame(docs)
+docs <- docs[docs$docs != "",]
+docs$Freq[is.na(docs$Freq)] <- 0
+docs$Freq <- docs$Freq / sum(docs$Freq)
+docsPL <- docs[order(docs$Freq, decreasing = TRUE),]
+names(docsPL) <- c("Letter", "PL")
+
+docs <- words[words$Lang == "NL",'Word']
+docs <- tolower(docs)
+docs <- gsub("", " ", docs)
+docs <- strsplit(docs, " ")
+docs <- unlist(docs)
+docs <- table(docs)
+docs <- data.frame(docs)
+docs <- docs[docs$docs != "",]
+docs$Freq[is.na(docs$Freq)] <- 0
+docs$Freq <- docs$Freq / sum(docs$Freq)
+docsNL <- docs[order(docs$Freq, decreasing = TRUE),]
+names(docsNL) <- c("Letter", "NL")
+
+res <- join(docsNL[1:10,], docsPL[1:10,], type = "full")
+res <- data.frame(res[,1])
+names(res) <-c("Letter")
+res <- join(res, docsNL)
+res <- join(res, docsPL)
+```
+
+```{r, echo=FALSE}
+knitr::kable(
+res, caption = 'Względna częstotliwość występowania liter w obu językach (top 10)'
+)
+```
+
+Wyniki przedstawia poniższy wykres.
+
+```{r, echo=FALSE}
+
+ggplot(res, aes(x= PL, y= NL, label=Letter)) +
+  geom_point() +
+  geom_text(aes(label=Letter),hjust=0, vjust=0)
+```
+
+## Częstotliwość występowania początkowych liter w obu językach
+
+Największa przewidywalność początkowch liter słów.
+
+```{r, echo=F, message=FALSE}
+words$Initial <- tolower(substr(words$Word,1,1))
+
+docs <- words[words$Lang == "PL",'Initial']
+docs <- table(docs)
+docs <- data.frame(docs)
+docs$Freq <- docs$Freq / sum(docs$Freq)
+docsPL <- docs[order(docs$Freq, decreasing = TRUE),]
+names(docsPL) <- c("Initial", "PL")
+
+docs <- words[words$Lang == "NL",'Initial']
+docs <- table(docs)
+docs <- data.frame(docs)
+docs$Freq <- docs$Freq / sum(docs$Freq)
+docsNL <- docs[order(docs$Freq, decreasing = TRUE),]
+names(docsNL) <- c("Initial", "NL")
+
+res <- join(docsNL[1:5,], docsPL[1:5,], type = "full")
+res <- data.frame(res[,1])
+names(res) <-c("Initial")
+res <- join(res, docsNL)
+res <- join(res, docsPL)
+
+```
+
+```{r, echo=FALSE}
+knitr::kable(
+res, caption = 'Względna częstotliwość występowania początkowych liter w obu językach (top 5)'
+)
+```
+
+```{r, echo=FALSE}
+
+ggplot(res, aes(x= PL, y= NL, label=Initial)) +
+  geom_point() +
+  geom_text(aes(label=Initial),hjust=0, vjust=0)
+```
+
+
+
+
+## Częstotliwość występowania początkowych digrafów w obu językach
+
+
+```{r, echo=F, message=FALSE}
+words$Digraph <- tolower(substr(words$Word,1,2))
+
+docs <- words[words$Lang == "PL",'Digraph']
+docs <- table(docs)
+docs <- data.frame(docs)
+docs$Freq <- docs$Freq / sum(docs$Freq)
+docsPL <- docs[order(docs$Freq, decreasing = TRUE),]
+names(docsPL) <- c("Digraph", "PL")
+
+docs <- words[words$Lang == "NL",'Digraph']
+docs <- table(docs)
+docs <- data.frame(docs)
+docs$Freq <- docs$Freq / sum(docs$Freq)
+docsNL <- docs[order(docs$Freq, decreasing = TRUE),]
+names(docsNL) <- c("Digraph", "NL")
+
+res <- join(docsNL[1:5,], docsPL[1:5,], type = "full")
+res <- data.frame(res[,1])
+names(res) <-c("Digraph")
+res <- join(res, docsNL)
+res <- join(res, docsPL)
+
+```
+
+```{r, echo=FALSE}
+knitr::kable(
+res, caption = 'Względna częstotliwość występowania początkowych digrafów w obu językach (top 5)'
+)
+```
+
+```{r, echo=FALSE}
+ggplot(res, aes(x= PL, y= NL, label=Digraph)) +
+  geom_point() +
+  geom_text(aes(label=Digraph),hjust=0, vjust=0)
+```
+
+W niderlandzkim `ge-` to przedrostek określający abstrakcyjne koncepcje pochodzące od czasownika. 
+
+
+```{r, echo=FALSE}
+ge <- data.frame(Przedrostek = c("", "ge-", ""),
+                 Grondwoord = c("zeuren", "piekeren", "fluiten"),
+                 Resultat = c("gezeur", "gepieker", "gefluit"))
+```
+
+
+```{r, echo=FALSE}
+ge_trans <- data.frame(NL = c("zeuren", "piekeren", "fluiten",
+                             "gezeur", "gepieker", "gefluit"),
+                 PL = c("jęczeć", "rozmyślać", "gwizdać",
+                        "jęczenie", "rozmyślanie", "gwizdanie"),
+                 EN = c("whine", "brood", "whistle",
+                        "whining", "brooding", "whistling"))
+```
+
+
+
+```{r, echo=FALSE}
+knitr::kable(
+ge, caption = 'Niderlandzki przedrostek ge-'
+)
+```
+
+```{r, echo=FALSE}
+knitr::kable(
+ge, caption = 'Tłumaczenie słów z niderlandzkim przedrostkiem ge-'
+)
+```
+
+## Częstotliwość występowania początkowych trigrafów w obu językach
+
+
+```{r, echo=F, message=FALSE}
+words$Trigraph <- tolower(substr(words$Word,1,3))
+
+docs <- words[words$Lang == "PL",'Trigraph']
+docs <- table(docs)
+docs <- data.frame(docs)
+docs$Freq <- docs$Freq / sum(docs$Freq)
+docsPL <- docs[order(docs$Freq, decreasing = TRUE),]
+names(docsPL) <- c("Trigraph", "PL")
+
+docs <- words[words$Lang == "NL",'Trigraph']
+docs <- table(docs)
+docs <- data.frame(docs)
+docs$Freq <- docs$Freq / sum(docs$Freq)
+docsNL <- docs[order(docs$Freq, decreasing = TRUE),]
+names(docsNL) <- c("Trigraph", "NL")
+
+res <- join(docsNL[1:3,], docsPL[1:3,], type = "full")
+
+res <- data.frame(res[,1])
+names(res) <-c("Trigraph")
+res <- join(res, docsNL)
+res <- join(res, docsPL)
+res[is.na(res$PL),"PL"] <- 0
+```
+
+```{r, echo=FALSE}
+knitr::kable(
+res, caption = 'Względna częstotliwość występowania początkowych trigrafów w obu językach (top 3)'
+)
+```
+
+```{r, echo=FALSE}
+ggplot(res, aes(x= PL, y= NL, label=Trigraph)) +
+  geom_point() +
+  geom_text(aes(label=Trigraph),hjust=0, vjust=0)
+```
+
+W polskim `nie-` to przedrostek określający zaprzeczenie, które nie musi mieć negatywnego ładunku. 
+
+
+```{r, echo=FALSE}
+nie <- data.frame(Przedrostek = c("", "nie-", ""),
+                  Rdzen = c("spokojny", "zwykły", "winny"),
+                  Rezultat = c("niespokojny", "niezwykły", "niewinny"))
+```
+
+```{r, echo=FALSE}
+knitr::kable(
+nie, caption = 'Polski przedrostek nie-'
+)
+```
+
+
+## Probabilistyczny model tworzenia tekstu
+
+Tworzenie pisanego tekstu języka naturalnego polega na tworzeniu określonych sekwencji liter.
+W procesie tworzenia tekstu dużą rolę odgrywa struktura probabilistyczna elementów tekstu -  liter.
+
+Modele wybudowano używając Łancuchy Markowa^[https://pl.wikipedia.org/wiki/%C5%81a%C5%84cuch_Markowa]
+
+```{r, echo=FALSE, eval=FALSE}
+library(markovchain) 
+# read files
+wordsPL <- read.csv(file="./dics/pl.wl",
+                    header = F,
+                    encoding = 'UTF-8',
+                    stringsAsFactors = F)
+
+
+wordsNL <- read.csv(file="./dics/nl.wl",
+                    header = F,
+                    encoding = 'UTF-8',
+                    stringsAsFactors = F)
+
+names(wordsPL) <- c("Word")
+names(wordsNL) <- c("Word")
+
+# clean a little
+wordsPL$Word <- gsub("\\/.*","",wordsPL$Word)
+wordsNL$Word <- gsub("\\/.*","",wordsNL$Word)
+
+# bind together
+wordsPL$Lang <- c('PL')
+wordsNL$Lang <- c('NL')
+words <- rbind(wordsPL, wordsNL)
+
+# remove starting with capital 
+words$Capital <- toupper(substr(words$Word,1,1)) == substr(words$Word,1,1)
+words <- words[words$Capital == FALSE,]
+
+# Add word start and end signs
+words$WordSigns <- sapply(words$Word, function(x) {
+  paste(paste("_",x,sep=""),".",sep="")})
+
+# Filter Polish and Dutch
+wordsPL <- words[words$Lang == 'PL', 'WordSigns']
+wordsNL <- words[words$Lang == 'NL', 'WordSigns']
+# Make copy for exclusion
+oldWordsPL <- words[words$Lang == 'PL', 'Word']
+oldWordsNL <- words[words$Lang == 'NL', 'Word']
+
+# paste into one vector
+wordsPL <- paste(wordsPL, collapse = '')
+wordsNL <- paste(wordsNL, collapse = '')
+
+# split the vector on seperate signs
+wordsPL <- strsplit(wordsPL, "")[[1]]
+wordsNL <- strsplit(wordsNL, "")[[1]]
+
+# Build models
+mcFitPL <- markovchainFit(data = wordsPL)
+mcFitNL <- markovchainFit(data = wordsNL)
+
+# Build new sequences - PL
+newWordsPL <- markovchainSequence(n=10000, markovchain=mcFitPL$estimate, 
+                           include=TRUE, t0="_")
+
+newWordsPL <- paste(newWordsPL, collapse = "")
+newWordsPL <- unlist(strsplit(newWordsPL, "[.]"))
+newWordsPL <- sapply(newWordsPL,function(x) {gsub("_","",x)})
+newWordsPL <- unique(newWordsPL)
+newWordsPL <- data.frame(newWordsPL)
+newWordsPL <- newWordsPL[sapply(newWordsPL[,1], function(x){
+  y <- as.character(x)
+  if(nchar(y) > 3 & nchar(y) < 8) {TRUE} else {FALSE}
+  }),]
+
+newWordsPL <- as.character(newWordsPL)
+newWordsPL <- data.frame(setdiff(newWordsPL, oldWordsPL))
+
+# Build new sequences - NL
+newWordsNL <- markovchainSequence(n=10000, markovchain=mcFitNL$estimate, 
+                           include=TRUE, t0="_")
+
+newWordsNL <- paste(newWordsNL, collapse = "")
+newWordsNL <- unlist(strsplit(newWordsNL, "[.]"))
+newWordsNL <- sapply(newWordsNL,function(x) {gsub("_","",x)})
+newWordsNL <- unique(newWordsNL)
+newWordsNL <- data.frame(newWordsNL)
+newWordsNL <- newWordsNL[sapply(newWordsNL[,1], function(x){
+  y <- as.character(x)
+  if(nchar(y) > 3 & nchar(y) < 8) {TRUE} else {FALSE}
+  }),]
+
+newWordsNL <- as.character(newWordsNL)
+newWordsNL <- data.frame(setdiff(newWordsNL, oldWordsNL))
+
+
+write.table(newWordsPL,file="./dics/newWordsPL",quote = FALSE,
+            col.names = FALSE, row.names = FALSE)
+write.table(newWordsNL,file="./dics/newWordsNL",quote = FALSE,
+            col.names = FALSE, row.names = FALSE)
+
+save(mcFitNL,mcFitPL, file = './dics/models.RData')
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(markovchain) 
+load(file = './dics/models.RData')
+
+# Part of the Polish model
+states <- c("_", "a", "i", "n")
+matrix <- mcFitPL$estimate@transitionMatrix
+matrix <- matrix[states,states]
+limit <- nrow(matrix)
+vec <- c()
+for(i in 1:limit){
+vec[i] <- 1/sum(matrix[i,])}
+
+for(i in 1:limit){
+matrix[i,] <- matrix[i,]*vec[i]}
+
+mcPL <- new("markovchain",
+            states = states,
+            transitionMatrix = matrix,
+            name = "Polish")
+
+# Part of the Dutch model
+states <- c("_", "e", "s", "t", "n")
+matrix <- mcFitNL$estimate@transitionMatrix
+matrix <- matrix[states,states]
+limit <- nrow(matrix)
+vec <- c()
+for(i in 1:limit){
+vec[i] <- 1/sum(matrix[i,])}
+
+for(i in 1:limit){
+matrix[i,] <- matrix[i,]*vec[i]}
+
+mcNL <- new("markovchain",
+            states = states,
+            transitionMatrix = matrix,
+            name = "Dutch")
+
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Fragment polskiego modelu zaprezentowany graficznie."}
+# Stan _ oznacza początek słowa."
+par(mar=c(0, 0, 0, 0))
+plot(mcPL)
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Fragment niderlandzkiego modelu zaprezentowany graficznie."}
+par(mar=c(0, 0, 0, 0))
+plot(mcNL)
+```
+
+Za pomocą wybudowanych modeli możemy dokonać predykcji. 
+
+```{r, echo=FALSE}
+predictPL <- paste(predict(mcFitPL$estimate, newdata="_",n.ahead=3),
+                   collapse = "")
+                     
+predictNL <- paste(predict(mcFitNL$estimate, newdata="_",n.ahead=4),
+                   collapse = "")
+```
+
+Otrzymujemy w ten sposób najbardziej prawdopodobne słowa:
+
+Polskie : **`r predictPL`**^[nee, niet]
+
+i niderlandzkie: **`r predictNL`**^[?????]
+
+
+Ciekawe są "nowe słowa" wygenerowane za pomocą modeli - słowa mające cechy języka naturalnego, jednak ("póki co") w nim nie istniejące.
+
+```{r, echo=FALSE}
+newWordsPL <- read.table(file = "./dics/newWordsPL",
+                         encoding = 'UTF-8')
+names(newWordsPL) <- c("Word")
+newWordsNL <- read.table(file = "./dics/newWordsNL",
+                         encoding = 'UTF-8')
+names(newWordsNL) <- c("Word")
+```
+
+```{r, echo=FALSE}
+knitr::kable(
+newWordsPL[c(9,10,18,29,55,68,99,126,208,215),], caption = 'Przykłady nowych słów polskich'
+)
+```
+
+```{r, echo=FALSE}
+knitr::kable(
+newWordsNL[c(6,16,19,20,21,24,78,169,177,179),], caption = 'Przykłady nowych słów niderlandzkich'
+)
+```
+
+Póki co widać różnice między językami, a gdzie są podobieństwa?
+
+# Podobieństwo słów z różnych słowników
+
+## Definicja podobieństwa dwóch słów
+
+Istnieje wiele sposobów mierzenia podobieństwa dwóch łańcuchów znaków (pojedyńczych słów, wyrażeń, pełnych zdań, czy też tekstów)^[https://en.wikipedia.org/wiki/String_metric]. Do poszukiwania podobnych łańcuchów stosuje się **Przybliżone dopasowanie łańcuchów**^[https://en.wikipedia.org/wiki/Approximate_string_matching]
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(readr)
+library(googlesheets)
+dics_clean <- read_csv("~/CanYouPolishYourDutch/dics/dics_clean.csv")
+dics_clean[is.na(dics_clean$Score),"Score"] <- 0
+dics_clean_PL <- dics_clean[dics_clean$Language == "PL",c(2,7,8)]
+dics_clean_NL <- dics_clean[dics_clean$Language == "NL",c(7,2,8)]
+names(dics_clean_NL) <- names(dics_clean_NL)[c(2,1,3)]
+friends <- rbind(dics_clean_PL, dics_clean_NL)
+friends <- friends[friends$Score <= 100 &  friends$Score >= 90,]
+friends <- unique(friends)
+
+write_csv(friends, "~/CanYouPolishYourDutch/dics/Friends.csv")
+
+### Authorisation
+gs_auth(token = "./.google_token.rds") # from .rds file
+gs_upload(file = "./dics/Friends.csv", sheet_title = NULL,
+          verbose = TRUE, overwrite = TRUE)
+
+x = c("Friends") # names of the sheet on the drive (registered gogle sheet)
+# Create pointer to the googlesheet
+y = gs_title(x, verbose = TRUE) 
+
+gs_deauth(clear_cache = TRUE, verbose = TRUE)
+
+
+```
+
+
+## Identyczne słowa
+
+Słowa identyczne są pisane dokładnie tak samo w obu językach. Z analiz wykluczono słowa zaczynające się wielką literą (skróty, imiona, nazwiska, nazwy geograficzne). Oraz słowa zbyt krótkie lub zbyt długie. Przykłady znalezionych identycznych słów:
+
+```{r, echo=FALSE}
+dim <- nrow(friends[friends$Score == 100,])
+friends_ident <- friends[c(140, 334, 753, 1174, 1191, 
+                           1404, 1720, 1780, 1994, 2078,
+                           2187, 2472,  4989),c(1)]
+
+knitr::kable(
+friends_ident, caption = 'Przykłady identycznych słów w językach polskim i niderlandzkim'
+)
+```
+
+ `r dim`  słów w słowniku niderlandzkim występuje w polskim słowniku. Większość z tych słów pochodzi z angielskiego bądź francuskiego. Są też fałszywi  przyjaciele^[https://en.wikipedia.org/wiki/False_friend]!
+Fałszywi przyjaciele to słowa w dwóch językach, które wyglądają i brzmią podobnie, ale znacząco różnią się w znaczeniu.
+
+Z jednej strony mogą być źródłem pomyłek, a z drugiej śmiesznych skojarzeń ułatwiajacyh ich zapamiętanie:
+
+> Ania nosi buty na **hak**u^[obcas]
+
+> Kasia ma nowy **kapsel**^[fryzura] na głowie
+
+> **Ja**^[tak] mówię tak, a ptak na **tak**^[gałąź]u pyta jak?
+
+> Ten ptak ma dwa **wiek^[skrzydło]**i.
+
+> Pani z **pan**^[patelnia]em
+
+## Słowa podobne
+
+Do wyszukiwania słów podobnych napisałem skrypt w Python [zobacz **Załącznik**](#zalacznik).
+
+```{r, echo=FALSE}
+friends_sim <- friends[c(4,344, 436, 1034, 1490, 5964),]
+
+knitr::kable(
+friends_sim, caption = 'Przykłady słów polskich i ich niderlandzkich przyjaciół'
+)
+```
+
+Takich słów jest `r nrow(friends) - dim`
+
+
+Pełna lista jest dostępna pod adresem: `r y$browser_url`
+
+Ta metoda zawiedzie w przypadkach, gdy słowa są podobne, ale mają różne początkowe digrafy.
+wyjątek: wirus - virus
+         kryzys - crisis
+
+
+# Załącznik {#zalacznik}
+
+```{python, eval = FALSE}
+#from fuzzywuzzy import fuzz
+from fuzzywuzzy import process
+import pandas as pd
+
+# Reading the datasets in a dataframe using Pandas
+nl = 'C:\\Users\\A599131\\Documents\\PolishYourDutch\\dics\\nl.wl'
+nl = pd.read_csv(nl, header = None)
+nl.columns   = ['Word']
+nl['Language'] = "NL"
+
+pl = 'C:\\Users\\A599131\\Documents\\PolishYourDutch\\dics\\pl.wl'
+pl = pd.read_csv(pl, header = None)
+pl.columns = ['Word']
+pl['Language'] = "PL"
+
+dics = pd.concat([pl, nl])
+
+dics['Word']  = dics['Word'].apply(lambda x: x.split('/', 1)[0])
+dics['Length'] = dics['Word'].apply(lambda x: len(x))
+dics['Upper']  = dics['Word'].apply(lambda x: x[0].isupper())
+dics['Initial']  = dics['Word'].apply(lambda x: x[0:2])
+
+# filter words with 3 < Length < 7
+dics = dics.loc[dics['Length'] > 3]
+dics = dics.loc[dics['Length'] < 12]
+dics = dics.loc[dics['Upper'] == False]
+
+# split back
+pl = dics.loc[dics['Language'] == 'PL']
+nl = dics.loc[dics['Language'] == 'NL']
+
+# optionally reindex
+pl = pl.reset_index(drop=True)
+nl = nl.reset_index(drop=True)
+dics = dics.reset_index(drop=True)
+
+# save to file
+
+pl.to_csv('C:\\Users\\A599131\\Documents\\PolishYourDutch\\dics\\pl_clean.csv',
+          columns = ["Word"],
+          index = True,
+          encoding = 'utf-8')
+          
+nl.to_csv('C:\\Users\\A599131\\Documents\\PolishYourDutch\\dics\\nl_clean.csv',
+          columns = ["Word"],
+          index = True,
+          encoding = 'utf-8')
+
+
+def my_fun(x,y): 
+  query = x
+  if y == 'PL':
+    language = 'NL'
+  else:
+    language = 'PL'
+  table = dics.loc[dics['Language'] == language]
+  table = table.loc[table['Initial'] == query[0:2]] # the same inital
+  table = table.loc[table['Length'] > len(query)-1] 
+  table = table.loc[table['Length'] < len(query)+2] 
+  if len(table.index) == 0:
+    res = ('','','')
+  else:
+    table = table['Word']
+    res = process.extractOne(query, table)
+  return(res)
+
+
+query = dics['Word'][5455] # banan
+query = dics['Word'][2384] # ananas - ananas / good
+query = dics['Word'][4499] # auto - auto / good
+query = dics['Word'][3151] # apartament - appartement / bad (AM)
+query = dics['Word'][3196] # aperitif - aperitief / good
+query = dics['Word'][116913] # truskawka - trustakte
+query = dics['Word'][144549] # ćmawy - ''
+print(query)
+print(my_fun(query, 'PL'))
+
+dics['Friend'] = ''
+dics['Score'] = ''
+
+# [1: range(0, 3)
+for index in range(0, 314271) :
+  temp = my_fun(dics['Word'][index], dics['Language'][index])
+  dics['Friend'][index] = temp[0]
+  dics['Score'][index]  = temp[1]
+
+dics.to_csv('C:\\Users\\A599131\\Documents\\PolishYourDutch\\dics\\dics_clean.csv',
+          index = True,
+          encoding = 'utf-8')
+```
+
+
+```
+odmienność:	tak
+X	antytetycznego, antytetycznemu, antytetycznych, antytetycznym, antytetycznymi, nieantytetycznego, nieantytetycznemu, nieantytetycznych, nieantytetycznym, nieantytetycznymi
+Y	antytetyczni, nieantytetyczni
+b	nieantytetyczny
+x	antytetyczna, antytetyczną, antytetyczne, antytetycznej, nieantytetyczna, nieantytetyczną, nieantytetyczne, nieantytetycznej
+y
+```
+
+```{r bib, include=FALSE}
+# create a bib file for the R packages used in this document
+knitr::write_bib(c('base', 'rmarkdown'), file = 'skeleton.bib')
+```
