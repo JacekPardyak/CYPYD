@@ -1,0 +1,12 @@
+---
+title: "README"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Template Project
+
+This project provides a template structure of folders and files for an R project.

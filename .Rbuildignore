@@ -1,0 +1,5 @@
+^radomd\.Rproj$
+^\.Rproj\.user$
+^LICENSE\.md$
+build.R
+README.Rmd
