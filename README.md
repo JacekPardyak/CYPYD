@@ -1,7 +1,7 @@
 README
 ================
 
-## R Template Project
+## radomd
 
-This project provides a template structure of folders and files for an R
-project.
+R wrapper for Python package pyadomd <https://github.com/S-C-O-U-T>. A
+pythonic and rthonic approach to query SSAS data models.
