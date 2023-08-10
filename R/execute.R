@@ -6,10 +6,13 @@
 #' @include query.R
 #' @export
 #' @exportMethod execute
+#' @docType methods
+#' @rdname execute-methods
 #' @examples
 #' \dontrun{
-#' library(magrittr)
-#' Sys.setenv(adomd_path = "/Program Files/Microsoft.NET/ADOMD.NET/160", conn_str = "Data Source=localhost; Provider=MSOLAP; initial catalog=Analysis Services Tutorial")
+#' Sys.setenv(adomd_path = "/Program Files/Microsoft.NET/ADOMD.NET/160", 
+#' conn_str = "Data Source=localhost; Provider=MSOLAP; 
+#' initial catalog=Analysis Services Tutorial")
 #' Query() %>% execute()
 #' }
 setGeneric(
@@ -19,7 +22,8 @@ setGeneric(
     standardGeneric("execute")
   }
 )
-
+#' @rdname execute-methods
+#' @aliases execute,character,ANY-method
 setMethod(
   f = "execute",
   signature = "Query",

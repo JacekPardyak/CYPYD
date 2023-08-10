@@ -13,13 +13,15 @@ Depends:
     magrittr
 Imports: 
     methods,
-    reticulate
+    reticulate,
+    igraph
 Collate: 
     'query.R'
     'columns.R'
     'cube.R'
     'execute.R'
     'explore.R'
+    'helloworld.R'
     'mdx.R'
     'rows.R'
     'slicers.R'

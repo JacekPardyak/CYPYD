@@ -6,6 +6,8 @@
 #' @return A Query.
 #' @include query.R
 #' @exportMethod slicers
+#' @docType methods
+#' @rdname slicers-methods
 #' @examples
 #' library(magrittr)
 #' Query() %>% slicers(c("[Sales Territory].[Sales Territory Country].[Australia]"))
@@ -17,7 +19,8 @@ setGeneric(
     standardGeneric("slicers")
   }
 )
-#' @export
+#' @rdname slicers-methods
+#' @aliases slicers,character,ANY-method
 setMethod(
   f = "slicers",
   signature = "Query",

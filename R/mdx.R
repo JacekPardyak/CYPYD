@@ -5,9 +5,16 @@
 #'
 #' @return A Query.
 #' @include query.R
+#' @exportMethod mdx
+#' @docType methods
+#' @rdname mdx-methods
 #' @examples
 #' library(magrittr)
-#' Query() %>% mdx("SELECT {[Measures].[Internet Sales Count], [Measures].[InternetSales-Sales Amount]} ON COLUMNS, {[Product].[Product Line].[Product Line].MEMBERS} ON ROWS FROM [Analysis Services Tutorial] WHERE [Sales Territory].[Sales Territory Country].[Australia]")
+#' Query() %>% mdx("SELECT {[Measures].[Internet Sales Count], 
+#' [Measures].[InternetSales-Sales Amount]} ON COLUMNS, 
+#' {[Product].[Product Line].[Product Line].MEMBERS} ON ROWS 
+#' FROM [Analysis Services Tutorial] 
+#' WHERE [Sales Territory].[Sales Territory Country].[Australia]")
 #' @export
 setGeneric(
   name = "mdx",
@@ -16,7 +23,8 @@ setGeneric(
     standardGeneric("mdx")
   }
 )
-#' @exportMethod mdx
+#' @rdname mdx-methods
+#' @aliases mdx,character,ANY-method
 setMethod(
   f = "mdx",
   signature = "Query",

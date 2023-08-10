@@ -6,6 +6,8 @@
 #' @include query.R
 #' @export
 #' @exportMethod explore
+#' @docType methods
+#' @rdname explore-methods
 #' @examples
 #' library(magrittr)
 #' Query() %>% explore()
@@ -17,7 +19,8 @@ setGeneric(
     standardGeneric("explore")
   }
 )
-#' @export
+#' @rdname explore-methods
+#' @aliases explore,character,ANY-method
 setMethod(
   f = "explore",
   signature = "Query",

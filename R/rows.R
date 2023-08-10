@@ -7,6 +7,8 @@
 #' @include query.R
 #' @export
 #' @exportMethod rows
+#' @docType methods
+#' @rdname rows-methods
 #' @examples
 #' library(magrittr)
 #' Query() %>% rows(c("[Product].[Product Line].[Product Line].MEMBERS"))
@@ -18,7 +20,8 @@ setGeneric(
     standardGeneric("rows")
   }
 )
-#' @export
+#' @rdname rows-methods
+#' @aliases rows,character,ANY-method
 setMethod(
   f = "rows",
   signature = "Query",

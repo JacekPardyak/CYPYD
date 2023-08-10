@@ -7,7 +7,8 @@
 #' @include query.R
 #' @export
 #' @exportMethod cube
-#' @aliases cube-method
+#' @docType methods
+#' @rdname cube-methods
 #' @examples
 #' library(magrittr)
 #' Query() %>% cube("[Adventure Works]")
@@ -17,7 +18,8 @@ setGeneric(name="cube",
              standardGeneric("cube")
            }
 )
-
+#' @rdname cube-methods
+#' @aliases cube,character,ANY-method
 setMethod(f="cube",
           signature="Query",
           definition=function(theObject,string)
