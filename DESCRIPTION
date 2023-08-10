@@ -1,5 +1,5 @@
 Package: radomd
-Title: R wrapper for Python package pyadomd. An Rthonic approach to query SSAS data models. 
+Title: An Rthonic approach to query SSAS data models
 Version: 1.0
 Authors@R: 
     person("Jacek", "Pardyak", , "jacek.pardyak@gmail.com", role = c("aut", "cre"),
@@ -9,8 +9,9 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
+Depends:
+    magrittr
 Imports: 
-    magrittr,
     methods,
     reticulate
 Collate: 

@@ -9,5 +9,43 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## radomd
 
-R wrapper for Python package pyadomd https://github.com/S-C-O-U-T. A pythonic and rthonic approach to query SSAS data models. 
+R wrapper for Python package `Pyadomd` https://github.com/S-C-O-U-T/Pyadomd. An Rthonic on top of the pythonic approach to query SSAS data models. 
+
+## Installation 
+
+1. Install `Pyadomd` Python library to be used by `Reticulate` in R.
+
+2. Install `radomd` R library:
+
+```{r, eval=FALSE}
+devtools::install_github("JacekPardyak/radomd")
+```
+
+3. Set up environmental variables:
+
+```{r}
+Sys.setenv(adomd_path = "/Program Files/Microsoft.NET/ADOMD.NET/160",
+           conn_str = "Data Source=localhost; Provider=MSOLAP; initial catalog=Analysis Services Tutorial")
+```
+
+## Query SSAS Tabular model with R
+
+1. You can use creator:
+
+```{r, eval=FALSE}
+library(radomd)
+Sys.setenv(adomd_path = "/Program Files/Microsoft.NET/ADOMD.NET/160",
+           conn_str = "Data Source=localhost; Provider=MSOLAP; initial catalog=Analysis Services Tutorial")
+Query() %>% cube("[Adventure Works]") %>%
+  rows(c("[Product].[Product Line].[Product Line].MEMBERS")) %>% 
+  columns(c("[Measures].[Internet Sales Count]", "[Measures].[Internet Sales-Sales Amount]")) %>%
+  slicers(c("[Sales Territory].[Sales Territory Country].[Australia]")) %>% execute()
+```
+
+2. Or you can use MDX to get the same result:
+
+```{r, eval=FALSE}
+library(radomd)
+Query() %>% mdx("SELECT {[Measures].[Internet Sales Count], [Measures].[InternetSales-Sales Amount]} ON COLUMNS, {[Product].[Product Line].[Product Line].MEMBERS} ON ROWS FROM [Analysis Services Tutorial] WHERE [Sales Territory].[Sales Territory Country].[Australia]") %>% execute()
+```
 

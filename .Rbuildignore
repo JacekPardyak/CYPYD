@@ -3,3 +3,5 @@
 ^LICENSE\.md$
 build.R
 README.Rmd
+.github
+.py
