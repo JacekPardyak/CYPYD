@@ -7,17 +7,22 @@ R wrapper for Python package `Pyadomd`
 <https://github.com/S-C-O-U-T/Pyadomd>. An Rthonic on top of the
 pythonic approach to query SSAS data models.
 
-## Installation
+## Installation and set up
 
-1.  Install `Pyadomd` Python library to be used by `Reticulate` in R.
+1.  Install `ADOMD`client library from
+    <https://learn.microsoft.com/en-us/analysis-services/client-libraries?view=asallproducts-allversions>
 
-2.  Install `radomd` R library:
+2.  Install `Reticulate` R library
+
+3.  Install `Pyadomd` Python library to be used by `Reticulate` in R.
+
+4.  Install `radomd` R library:
 
 ``` r
 devtools::install_github("JacekPardyak/radomd")
 ```
 
-3.  Set up environmental variables:
+5.  Set up environmental variables:
 
 ``` r
 Sys.setenv(adomd_path = "/Program Files/Microsoft.NET/ADOMD.NET/160",
@@ -42,5 +47,9 @@ Query() %>% cube("[Adventure Works]") %>%
 
 ``` r
 library(radomd)
-Query() %>% mdx("SELECT {[Measures].[Internet Sales Count], [Measures].[InternetSales-Sales Amount]} ON COLUMNS, {[Product].[Product Line].[Product Line].MEMBERS} ON ROWS FROM [Analysis Services Tutorial] WHERE [Sales Territory].[Sales Territory Country].[Australia]") %>% execute()
+Query() %>% mdx("SELECT {[Measures].[Internet Sales Count],
+[Measures].[InternetSales-Sales Amount]} ON COLUMNS, 
+{[Product].[Product Line].[Product Line].MEMBERS} ON ROWS
+FROM [Analysis Services Tutorial] 
+WHERE [Sales Territory].[Sales Territory Country].[Australia]") %>% execute()
 ```
