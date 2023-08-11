@@ -14,9 +14,18 @@ pythonic approach to query SSAS data models.
 
 2.  Install `Reticulate` R library
 
+``` r
+install.packages('reticulate')
+```
+
 3.  Install `Pyadomd` Python library to be used by `Reticulate` in R.
 
-4.  Install `radomd` R library:
+``` r
+library(reticulate)
+repl_python(input = "!pip install pyadomd")
+```
+
+4.  Install `Radomd` R library:
 
 ``` r
 devtools::install_github("JacekPardyak/radomd")
@@ -27,6 +36,14 @@ devtools::install_github("JacekPardyak/radomd")
 ``` r
 Sys.setenv(adomd_path = "/Program Files/Microsoft.NET/ADOMD.NET/160",
            conn_str = "Data Source=localhost; Provider=MSOLAP; initial catalog=Analysis Services Tutorial")
+```
+
+6.  Check if everything works fine:
+
+``` r
+library(radomd)
+Query() %>% execute()
+# Open
 ```
 
 ## Query SSAS Tabular model with R

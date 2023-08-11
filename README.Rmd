@@ -17,9 +17,18 @@ R wrapper for Python package `Pyadomd` https://github.com/S-C-O-U-T/Pyadomd. An 
 
 2. Install `Reticulate` R library
 
+```{r, eval=FALSE}
+install.packages('reticulate')
+```
+
 3. Install `Pyadomd` Python library to be used by `Reticulate` in R.
 
-4. Install `radomd` R library:
+```{r, eval=FALSE}
+library(reticulate)
+repl_python(input = "!pip install pyadomd")
+```
+
+4. Install `Radomd` R library:
 
 ```{r, eval=FALSE}
 devtools::install_github("JacekPardyak/radomd")
@@ -31,6 +40,15 @@ devtools::install_github("JacekPardyak/radomd")
 Sys.setenv(adomd_path = "/Program Files/Microsoft.NET/ADOMD.NET/160",
            conn_str = "Data Source=localhost; Provider=MSOLAP; initial catalog=Analysis Services Tutorial")
 ```
+
+6. Check if everything works fine:
+
+```{r, eval=FALSE}
+library(radomd)
+Query() %>% execute()
+# Open
+```
+
 
 ## Query SSAS Tabular model with R
 
