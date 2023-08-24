@@ -18,3 +18,5 @@ Query() %>% execute()
 Query() %>% cube("[Adventure Works]") %>% 
   columns(c("[Measures].[Internet Sales Count]", "[Measures].[Internet Sales-Sales Amount]"))
 
+library(reticulate)
+repl_python(input = "!pip install pyadomd")

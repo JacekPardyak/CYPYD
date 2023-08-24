@@ -44,14 +44,21 @@ def get_state():
 path.append("%s")
 from pyadomd import Pyadomd
 from pandas import DataFrame
+from decimal import Decimal
 conn_str = "%s"
 def get_data(x):
   with Pyadomd(conn_str) as conn:
     with conn.cursor().execute(x) as cur:
       df = DataFrame(cur.fetchone(), columns=[i.name for i in cur.description])
-      tmp = df.select_dtypes(include="object")
-      tmp.fillna("NULL", inplace = True)
-      df = tmp.join(df.select_dtypes(exclude="object"))
+      cols = df.columns
+      for col in cols:
+        if isinstance(df[col][0], Decimal):
+          df[col] = df[col].apply(float)
+        if isinstance(df[col][0], str):
+          df[col] =  df[col].fillna("NULL")
+#      tmp = df.select_dtypes(include="object")
+#      tmp.fillna("NULL", inplace = True)
+#      df = tmp.join(df.select_dtypes(exclude="object"))
   return df' %>% sprintf(Sys.getenv("adomd_path"), Sys.getenv("conn_str")) %>% writeLines('lib.py')
     
     if ( nchar(theObject@mdx) == 0 & nchar(theObject@cube) == 0) {
