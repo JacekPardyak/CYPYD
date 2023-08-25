@@ -45,6 +45,7 @@ path.append("%s")
 from pyadomd import Pyadomd
 from pandas import DataFrame
 import System
+import numpy as np
 conn_str = "%s"
 def get_data(x):
   with Pyadomd(conn_str) as conn:
@@ -53,7 +54,7 @@ def get_data(x):
       cols = df.columns
       for col in cols:
         if isinstance(df[col][0], System.Decimal):
-          df[col] = df[col].apply(lambda row: float(row.ToString().replace(",",".")) if isinstance(row, System.Decimal) else 0)
+          df[col] = df[col].apply(lambda row: float(row.ToString().replace(",",".")) if isinstance(row, System.Decimal) else np.nan)
         if df[cols[0]][0] is None:
           df[cols[0]].fillna("NULL", inplace = True)
 #      tmp = df.select_dtypes(include="object")
