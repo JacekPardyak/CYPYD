@@ -44,7 +44,7 @@ def get_state():
 path.append("%s")
 from pyadomd import Pyadomd
 from pandas import DataFrame
-from decimal import Decimal
+import System
 conn_str = "%s"
 def get_data(x):
   with Pyadomd(conn_str) as conn:
@@ -52,10 +52,10 @@ def get_data(x):
       df = DataFrame(cur.fetchone(), columns=[i.name for i in cur.description])
       cols = df.columns
       for col in cols:
-        if isinstance(df[col][0], Decimal):
-          df[col] = df[col].apply(float)
-        if isinstance(df[col][0], str):
-          df[col] =  df[col].fillna("NULL")
+        if isinstance(df[col][0], System.Decimal):
+          df[col] = df[col].apply(lambda row: float(row.ToString().replace(",",".")) if isinstance(row, System.Decimal) else 0)
+        if df[cols[0]][0] is None:
+          df[cols[0]].fillna("NULL", inplace = True)
 #      tmp = df.select_dtypes(include="object")
 #      tmp.fillna("NULL", inplace = True)
 #      df = tmp.join(df.select_dtypes(exclude="object"))
